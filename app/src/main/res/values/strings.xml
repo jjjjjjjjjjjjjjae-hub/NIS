@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">NIS</string>
+
+    <!-- Overlay -->
+    <string name="overlay_title">NIS Overlay</string>
+    <string name="overlay_running">Overlay Service жұмыс істеп тұр</string>
+    <string name="overlay_permission_required">
+        Қосымшаға экранның үстіне көрсету рұқсатын беріңіз.
+    </string>
+
+    <!-- Buttons -->
+    <string name="start">START</string>
+    <string name="stop">STOP</string>
+    <string name="exit">EXIT</string>
+    <string name="close">Жабу</string>
+
+    <!-- Notifications -->
+    <string name="notification_channel_name">Overlay Service</string>
+    <string name="notification_channel_description">
+        Foreground Overlay Service
+    </string>
+
+    <!-- Errors -->
+    <string name="error_unknown">Белгісіз қате орын алды.</string>
+    <string name="error_overlay_permission">
+        Overlay рұқсаты жоқ.
+    </string>
+
+</resources>

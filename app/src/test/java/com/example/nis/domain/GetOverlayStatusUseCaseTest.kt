@@ -3,13 +3,21 @@ package com.example.nis.domain
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
-import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 
 class GetOverlayStatusUseCaseTest {
 
-    private val repository = mockk<OverlayRepository>()
-    private val useCase = GetOverlayStatusUseCase(repository)
+    private lateinit var repository: OverlayRepository
+    private lateinit var useCase: GetOverlayStatusUseCase
+
+    @Before
+    fun setUp() {
+        repository = mockk()
+        useCase = GetOverlayStatusUseCase(repository)
+    }
 
     @Test
     fun `invoke returns true when repository returns true`() {
@@ -20,8 +28,10 @@ class GetOverlayStatusUseCaseTest {
         val result = useCase()
 
         // Assert
-        assertEquals(true, result)
-        verify(exactly = 1) { repository.isOverlayEnabledByAdmin() }
+        assertTrue(result)
+        verify(exactly = 1) {
+            repository.isOverlayEnabledByAdmin()
+        }
     }
 
     @Test
@@ -33,7 +43,23 @@ class GetOverlayStatusUseCaseTest {
         val result = useCase()
 
         // Assert
-        assertEquals(false, result)
-        verify(exactly = 1) { repository.isOverlayEnabledByAdmin() }
+        assertFalse(result)
+        verify(exactly = 1) {
+            repository.isOverlayEnabledByAdmin()
+        }
+    }
+
+    @Test
+    fun `invoke calls repository only once`() {
+        // Arrange
+        every { repository.isOverlayEnabledByAdmin() } returns true
+
+        // Act
+        useCase()
+
+        // Assert
+        verify(exactly = 1) {
+            repository.isOverlayEnabledByAdmin()
+        }
     }
 }

@@ -1,0 +1,14 @@
+# Android SDK жолы
+sdk.dir=/home/USER/Android/Sdk
+
+
+# Release signing
+# Нақты мәндерді GitHub Secrets немесе local.properties ішіне жаз
+
+KEY_ALIAS=your_key_alias
+
+KEY_PASSWORD=your_key_password
+
+STORE_PASSWORD=your_keystore_password
+
+STORE_FILE=/path/to/your/keystore.jks

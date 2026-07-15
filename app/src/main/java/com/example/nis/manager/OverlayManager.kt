@@ -3,91 +3,109 @@ package com.example.nis.manager
 import android.content.Context
 import android.graphics.PixelFormat
 import android.hardware.display.DisplayManager
+import android.util.Log
 import android.view.Gravity
 import android.view.WindowManager
 import android.widget.Button
 import android.widget.LinearLayout
-import android.util.Log
 
 class OverlayManager(
     private val context: Context,
     private val onCloseRequested: () -> Unit
 ) {
-    private val windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
-    private val displayManager = context.getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
-    
-    @Volatile private var isViewAttached = false // Multi-threading қауіпсіздігі
+
+    private val windowManager =
+        context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
+
+    private val displayManager =
+        context.getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
+
+    @Volatile
+    private var isAttached = false
+
     private lateinit var params: WindowManager.LayoutParams
 
-    private val rootLayout: LinearLayout by lazy {
+    private val overlayView: LinearLayout by lazy {
         LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
-            setBackgroundColor(0xCC000000.toInt())
             gravity = Gravity.CENTER
-            addView(Button(context).apply { 
-                text = "EXIT"
-                setOnClickListener { 
-                    hideOverlay()
-                    onCloseRequested() 
-                } 
-            })
+            setPadding(32, 32, 32, 32)
+            setBackgroundColor(0xCC000000.toInt())
+
+            addView(
+                Button(context).apply {
+                    text = "EXIT"
+                    setOnClickListener {
+                        hideOverlay()
+                        onCloseRequested()
+                    }
+                }
+            )
         }
     }
 
     private val displayListener = object : DisplayManager.DisplayListener {
-        override fun onDisplayAdded(displayId: Int) {}
-        override fun onDisplayRemoved(displayId: Int) {}
+        override fun onDisplayAdded(displayId: Int) = Unit
+
+        override fun onDisplayRemoved(displayId: Int) = Unit
+
         override fun onDisplayChanged(displayId: Int) {
-            updateLayoutSafely()
+            updateOverlay()
         }
     }
 
     fun showOverlay() {
-        if (isViewAttached) return
+        if (isAttached) return
+
         params = WindowManager.LayoutParams(
-            WindowManager.LayoutParams.MATCH_PARENT, 
+            WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-            WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+            WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
+                    WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
             PixelFormat.TRANSLUCENT
-        )
+        ).apply {
+            gravity = Gravity.TOP
+        }
+
         try {
-            windowManager.addView(rootLayout, params)
-            isViewAttached = true
+            windowManager.addView(overlayView, params)
             displayManager.registerDisplayListener(displayListener, null)
-        } catch (e: WindowManager.BadTokenException) {
-            Log.e("OverlayManager", "Bad token, overlay permission revoked?", e)
+            isAttached = true
         } catch (e: Exception) {
-            Log.e("OverlayManager", "Unknown error adding view", e)
+            Log.e(TAG, "Unable to show overlay", e)
         }
     }
 
-    private fun updateLayoutSafely() {
-        if (!isViewAttached) return
+    private fun updateOverlay() {
+        if (!isAttached) return
+
         try {
-            // Ерекше жағдайды (Exception) қауіпсіз ұстау
-            if (rootLayout.windowToken != null) {
-                windowManager.updateViewLayout(rootLayout, params)
+            if (overlayView.windowToken != null) {
+                windowManager.updateViewLayout(overlayView, params)
             }
-        } catch (e: IllegalArgumentException) {
-            Log.e("OverlayManager", "View not attached to WindowManager", e)
-            isViewAttached = false
         } catch (e: Exception) {
-            Log.e("OverlayManager", "Failed to update layout", e)
+            Log.e(TAG, "Unable to update overlay", e)
         }
     }
 
     fun hideOverlay() {
-        if (!isViewAttached) return
+        if (!isAttached) return
+
         try {
             displayManager.unregisterDisplayListener(displayListener)
-            if (rootLayout.windowToken != null) {
-                windowManager.removeView(rootLayout)
+
+            if (overlayView.windowToken != null) {
+                windowManager.removeView(overlayView)
             }
         } catch (e: Exception) {
-            Log.e("OverlayManager", "Error removing view", e)
+            Log.e(TAG, "Unable to remove overlay", e)
         } finally {
-            isViewAttached = false
+            isAttached = false
         }
+    }
+
+    companion object {
+        private const val TAG = "OverlayManager"
     }
 }

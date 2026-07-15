@@ -4,15 +4,14 @@ import java.io.FileInputStream
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
-    id("com.google.devtools.ksp") // 2026 стандарты
+    id("com.google.devtools.ksp")
     id("com.google.dagger.hilt.android")
 }
 
-// Құпия сөздерді local.properties немесе CI/CD Environment Variables арқылы оқу
-val keystorePropertiesFile = rootProject.file("local.properties")
 val keystoreProperties = Properties()
-if (keystorePropertiesFile.exists()) {
-    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+val keystoreFile = rootProject.file("local.properties")
+if (keystoreFile.exists()) {
+    keystoreProperties.load(FileInputStream(keystoreFile))
 }
 
 android {
@@ -25,62 +24,82 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "1.0.0"
+
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     signingConfigs {
         create("release") {
-            keyAlias = keystoreProperties["KEY_ALIAS"] as String? ?: System.getenv("KEY_ALIAS")
-            keyPassword = keystoreProperties["KEY_PASSWORD"] as String? ?: System.getenv("KEY_PASSWORD")
-            storeFile = keystoreProperties["STORE_FILE"]?.let { file(it) }
-            storePassword = keystoreProperties["STORE_PASSWORD"] as String? ?: System.getenv("STORE_PASSWORD")
+            keyAlias = keystoreProperties["KEY_ALIAS"] as String?
+                ?: System.getenv("KEY_ALIAS")
+            keyPassword = keystoreProperties["KEY_PASSWORD"] as String?
+                ?: System.getenv("KEY_PASSWORD")
+            storePassword = keystoreProperties["STORE_PASSWORD"] as String?
+                ?: System.getenv("STORE_PASSWORD")
+
+            val store = keystoreProperties["STORE_FILE"] as String?
+            if (store != null) {
+                storeFile = file(store)
+            }
         }
     }
 
     buildTypes {
-        getByName("debug") {
+        debug {
             applicationIdSuffix = ".debug"
             isDebuggable = true
         }
-        getByName("release") {
+
+        release {
             isMinifyEnabled = true
             isShrinkResources = true
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            // CI/CD-да ғана signingConfig қосылады:
+
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+
             // signingConfig = signingConfigs.getByName("release")
         }
-    }
-
-    lint {
-        warningsAsErrors = true
-        abortOnError = true
-        checkReleaseBuilds = true
     }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions { jvmTarget = "17" }
+
+    kotlinOptions {
+        jvmTarget = "17"
+    }
+
+    buildFeatures {
+        buildConfig = true
+    }
+
+    lint {
+        abortOnError = true
+        checkReleaseBuilds = true
+        warningsAsErrors = true
+    }
 }
 
 dependencies {
+
     implementation("androidx.core:core-ktx:1.15.0")
     implementation("androidx.appcompat:appcompat:1.7.0")
-    implementation("androidx.activity:activity-ktx:1.9.0")
-    
-    // Hilt DI
+    implementation("androidx.activity:activity-ktx:1.9.1")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.7")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
+
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
+
     implementation("com.google.dagger:hilt-android:2.51.1")
     ksp("com.google.dagger:hilt-compiler:2.51.1")
-    
-    // Coroutines
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.0")
-    
-    // Testing (Нақты тесттер үшін)
+
     testImplementation("junit:junit:4.13.2")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.0")
-    testImplementation("io.mockk:mockk:1.13.10")
-    testImplementation("androidx.arch.core:core-testing:2.2.0")
-    androidTestImplementation("androidx.test.ext:junit:1.1.5")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+    testImplementation("io.mockk:mockk:1.13.12")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
+
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
 }
